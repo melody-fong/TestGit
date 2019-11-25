@@ -1,0 +1,125 @@
+---
+title: "resto upsell"
+author: "Melody Fong"
+date: "11/22/2019"
+output: html_document
+---
+
+### Load Data and Libraries
+```{r setup, include=FALSE}
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+resto <- read.csv("upsell_resto.csv", header = FALSE)
+colnames(resto) <- c("cust_id", "load_dt", "change_in_commission", "order_before", "food_and_bev_before", 
+                     "cust_id2", "load_dt2", "change_in_commission2", "order_after", "food_and_bev_after")
+```
+
+```{r}
+resto_copy <- resto %>% 
+  mutate(change_in_order = order_after - order_before,
+         change_in_amt = food_and_bev_after - food_and_bev_before,
+         change_in_order_pct = (order_after - order_before)/order_before,
+         change_in_amt_pct = (food_and_bev_after - food_and_bev_before)/food_and_bev_before) %>% 
+  filter(change_in_commission != 0) %>% 
+  filter(food_and_bev_before!= 0) %>% 
+  filter(food_and_bev_after!= 0) %>% 
+  filter(order_before != 0) %>% 
+  filter(order_after != 0) %>% 
+#  filter(change_in_order >= quantile(change_in_order, 0.05) & change_in_order <= quantile(change_in_order, 0.95)) %>%
+#  filter(change_in_amt >= quantile(change_in_amt, 0.05) & change_in_amt <= quantile(change_in_amt, 0.95)) %>% 
+#  filter(change_in_amt_pct >= quantile(change_in_amt_pct, 0.05, na.rm = TRUE) & 
+#           change_in_amt_pct <= quantile(change_in_amt_pct, 0.95, na.rm = TRUE)) %>% 
+#  filter(change_in_order_pct >= quantile(change_in_order_pct, 0.05) & 
+#           change_in_order_pct <= quantile(change_in_order_pct, 0.95)) %>% 
+  select(cust_id, load_dt, change_in_commission, change_in_order, change_in_amt,change_in_order_pct, change_in_amt_pct,
+         order_before, order_after, food_and_bev_before, food_and_bev_after) %>% 
+  as.data.frame()
+```
+
+```{r}
+resto_copy2 <- resto %>% 
+  mutate(change_in_order = order_after - order_before,
+         change_in_amt = food_and_bev_after - food_and_bev_before,
+         change_in_order_pct = (order_after - order_before)/order_before,
+         change_in_amt_pct = (food_and_bev_after - food_and_bev_before)/food_and_bev_before) %>% 
+  filter(change_in_commission != 0) %>% 
+  filter(food_and_bev_before!= 0) %>% 
+  filter(food_and_bev_after!= 0) %>% 
+  filter(order_before != 0) %>% 
+  filter(order_after != 0) %>% 
+  filter(change_in_order >= quantile(change_in_order, 0.05) & change_in_order <= quantile(change_in_order, 0.95) &
+         change_in_amt >= quantile(change_in_amt, 0.05) & change_in_amt <= quantile(change_in_amt, 0.95) &
+           change_in_amt_pct >= quantile(change_in_amt_pct, 0.05, na.rm = TRUE) & 
+           change_in_amt_pct <= quantile(change_in_amt_pct, 0.95, na.rm = TRUE) &
+           change_in_order_pct >= quantile(change_in_order_pct, 0.05) & 
+           change_in_order_pct <= quantile(change_in_order_pct, 0.95)) %>% 
+  select(cust_id, load_dt, change_in_commission, change_in_order, change_in_amt,change_in_order_pct, change_in_amt_pct,
+         order_before, order_after, food_and_bev_before, food_and_bev_after) %>% 
+  as.data.frame()
+```
+
+
+```{r}
+resto_copy %>% 
+  ggplot() + geom_point(aes(x = change_in_commission, y = change_in_order))
+
+resto_copy %>% 
+  ggplot() + geom_histogram(aes(x = change_in_order)) + xlab("Change in Order Volume") +
+  ggtitle("Change in Total Order Volume Before vs After a Take Rate Upsell") + theme_minimal()
+
+resto_copy %>% 
+  ggplot() + geom_histogram(aes(x = change_in_order_pct)) + xlab("Percentage Change in Order Volume") +
+  ggtitle("Percentage Change in Total Order Volume Before vs After a Take Rate Upsell") + theme_minimal() +
+  scale_x_continuous(labels = scales::percent)
+
+resto_copy %>% 
+  ggplot() + geom_histogram(aes(x = change_in_amt)) + xlab("Change in Order Value") +
+  ggtitle("Change in Total Order Value Before vs After a Take Rate Upsell") + theme_minimal()
+
+resto_copy %>% 
+  ggplot() + geom_histogram(aes(x = change_in_amt_pct)) + xlab("Percentage Change in Order Value") +
+  ggtitle("Percentage Change in Total Order Value Before vs After a Take Rate Upsell") + theme_minimal() +
+  scale_x_continuous(labels = scales::percent)
+```
+
+```{r}
+resto_copy2 %>% 
+  ggplot() + geom_point(aes(x = change_in_commission, y = change_in_order))
+
+resto_copy2 %>% 
+  ggplot() + geom_histogram(aes(x = change_in_order)) + xlab("Change in Order Volume") +
+  ggtitle("Change in Total Order Volume Before vs After a Take Rate Upsell") +
+  geom_vline(xintercept = mean(resto_copy2$change_in_order), lwd=1, linetype=2, color="red") + theme_minimal()
+
+resto_copy2 %>% 
+  ggplot() + geom_histogram(aes(x = change_in_order_pct)) + xlab("Percentage Change in Order Volume") +
+  ggtitle("Percentage Change in Total Order Volume Before vs After a Take Rate Upsell") + theme_minimal() +
+  scale_x_continuous(labels = scales::percent) +
+  geom_vline(xintercept = mean(resto_copy2$change_in_order_pct), lwd=1, linetype=2, color="red")
+
+resto_copy2 %>% 
+  ggplot() + geom_histogram(aes(x = change_in_amt)) + xlab("Change in Order Value") +
+  ggtitle("Change in Total Order Value Before vs After a Take Rate Upsell") + theme_minimal() +
+  geom_vline(xintercept = mean(resto_copy2$change_in_amt), lwd=1, linetype=2, color="red")
+
+resto_copy2 %>% 
+  ggplot() + geom_histogram(aes(x = change_in_amt_pct)) + xlab("Percentage Change in Order Value") +
+  ggtitle("Percentage Change in Total Order Value Before vs After a Take Rate Upsell") + theme_minimal() +
+  scale_x_continuous(labels = scales::percent)+
+  geom_vline(xintercept = mean(resto_copy2$change_in_amt_pct), lwd=1, linetype=2, color="red")
+```
+
+```{r}
+resto_copy %>% 
+  select(change_in_commission, change_in_amt, change_in_order, change_in_amt_pct, change_in_order_pct) %>% 
+  summary()
+```
+
+
+```{r}
+resto_copy2 %>% 
+  select(change_in_commission, change_in_amt, change_in_order, change_in_amt_pct, change_in_order_pct) %>% 
+  summary()
+```
+
